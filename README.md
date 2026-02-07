@@ -1,4 +1,4 @@
-# Guerrero Tap
+# Personal Homebrew Tap
 
 ## How do I install these formulae?
 
