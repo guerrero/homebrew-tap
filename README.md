@@ -1,16 +1,14 @@
 # Personal Homebrew Tap
 
-## How do I install these formulae?
+Formulae for tools by [@guerrero](https://github.com/guerrero).
 
-`brew install guerrero/tap/<formula>`
+## gitia
 
-Or `brew tap guerrero/tap` and then `brew install <formula>`.
+Generate Conventional Commits from the staged diff with a local model.
 
-Or, in a `brew bundle` `Brewfile`:
-
-```ruby
-tap "guerrero/tap"
-brew "<formula>"
+```bash
+brew tap guerrero/tap
+brew install gitia
 ```
 
 ## Documentation
