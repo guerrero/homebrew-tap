@@ -4,7 +4,7 @@
 
 **Goal:** Make `brew install gitia` work from `guerrero/tap` and give gitia a documented manual release process (`make release`) that publishes binaries and auto-updates the tap formula.
 
-**Architecture:** Two repos cooperate. goreleaser (already configured in gitia's `.goreleaser.yaml` with a `brews:` section) generates `Formula/gitia.rb` and pushes it to `guerrero/homebrew-tap` on every release; we cut the first real release (`v0.2.0`) to create the formula. In parallel, gitia gains a guarded `make release` target plus release documentation (CONTRIBUTING.md checklist, AGENTS.md conventions, CHANGELOG merge). The tap is then cleaned up (README, CI token, remove boilerplate formula) and the branch merged.
+**Architecture:** Two repos cooperate. goreleaser (already configured in gitia's `.goreleaser.yaml` with a `brews:` section) generates `gitia.rb` and pushes it to the tap root of `guerrero/homebrew-tap` on every release; we cut the first real release (`v0.2.0`) to create the formula. In parallel, gitia gains a guarded `make release` target plus release documentation (CONTRIBUTING.md checklist, AGENTS.md conventions, CHANGELOG merge). The tap is then cleaned up (README, CI token, remove boilerplate formula) and the branch merged.
 
 **Tech Stack:** Homebrew formulae/ruby, goreleaser v2, Go (gitia), GitHub Actions (tap CI), gh CLI.
 
@@ -100,9 +100,11 @@ Checklist:
 4. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 5. `GITHUB_TOKEN=$(gh auth token) make release` — goreleaser builds the
    darwin/linux archives, creates the GitHub Release with notes from the
-   commits since the last tag, and pushes `Formula/gitia.rb` to
-   `guerrero/homebrew-tap`. The token needs `repo` scope (write access to
-   both repositories).
+   commits since the last tag, and pushes `gitia.rb` (at the tap root) to
+   `guerrero/homebrew-tap`. `make release` then strips the redundant
+   `version` line goreleaser emits, since brew derives the version from the
+   URL — this keeps `brew audit` green. The token needs `repo` scope (write
+   access to both repositories).
 6. Verify: `brew update && brew upgrade gitia` installs the new version.
 ```
 
@@ -204,7 +206,7 @@ Verify: `git log --oneline -1` shows the new commit on `main`; `git status --sho
 
 **Interfaces:**
 - Consumes: Task 1's commit on local `main`; `make release` target.
-- Produces: `origin/main` updated; GitHub Release `v0.2.0` with 5 assets; a goreleaser commit adding `Formula/gitia.rb` on `guerrero/homebrew-tap@main` (consumed by Task 3).
+- Produces: `origin/main` updated; GitHub Release `v0.2.0` with 5 assets; a goreleaser commit adding `gitia.rb` at the tap root on `guerrero/homebrew-tap@main` (consumed by Task 3).
 
 - [ ] **Step 1: Push main**
 
@@ -245,10 +247,10 @@ Expected: `origin/main` has a goreleaser commit (e.g. "Brew formula update for g
 
 ### Task 3: tap — rebase and verify the generated formula
 
-**Files:** (verify only — do NOT edit `Formula/gitia.rb`)
+**Files:** (verify only — do NOT edit `gitia.rb`)
 
 **Interfaces:**
-- Consumes: `Formula/gitia.rb` on `origin/main` (from Task 2), branch `gitia-homebrew-formula` with the spec commit.
+- Consumes: `gitia.rb` at the tap root on `origin/main` (from Task 2), branch `gitia-homebrew-formula` with the spec commit.
 - Produces: rebased branch containing the formula; verified formula install on this machine.
 
 - [ ] **Step 1: Rebase the worktree branch onto origin/main**
@@ -262,13 +264,13 @@ Expected: clean rebase; `git status --short` clean; `ls` shows `gitia.rb` at the
 
 - [ ] **Step 2: Inspect the formula against the expected shape**
 
-Run: `cat Formula/gitia.rb`
-Expected fields (from `.goreleaser.yaml` `brews:`): `desc "Generate Conventional Commits from the staged diff with a local model"`, `homepage "https://github.com/guerrero/gitia"`, `license "Unlicense"`, `version "0.2.0"`, `depends_on "git"` and `depends_on "ollama" => :optional`, install defined as `bin.install "gitia"` + `man1.install "man/gitia.1"` (goreleaser v2 emits `define_method(:install)` blocks inside the `on_macos`/`on_linux` + CPU sections), test `system "#{bin}/gitia", "--version"`, and per-arch `url`/`sha256` pointing at `releases/download/v0.2.0/gitia_0.2.0_<os>_<arch>.tar.gz`. If the shape differs, keep goreleaser's output (it is authoritative) and note the difference in the final summary.
+Run: `cat gitia.rb`
+Expected fields (from `.goreleaser.yaml` `brews:`): `desc "Generate Conventional Commits from the staged diff with a local model"`, `homepage "https://github.com/guerrero/gitia"`, `license "Unlicense"`, `depends_on "git"` and `depends_on "ollama" => :optional`, install defined as `bin.install "gitia"` + `man1.install "man/gitia.1"` (goreleaser v2 emits `define_method(:install)` blocks inside the `on_macos`/`on_linux` + CPU sections), test `system "#{bin}/gitia", "--version"`, and per-arch `url`/`sha256` pointing at `releases/download/v0.2.0/gitia_0.2.0_<os>_<arch>.tar.gz`. No `version` line — the release automation strips goreleaser's redundant one, keeping the formula audit-clean. If the shape differs in other ways, keep goreleaser's output (it is authoritative) and note the difference in the final summary.
 
 - [ ] **Step 3: Audit the formula**
 
 Run: `cd /Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong && brew audit --formula gitia.rb`
-Expected: exit 1 with exactly ONE problem — `Stable: version 0.2.0 is redundant with version scanned from URL` (goreleaser emits the `version` line; it is authoritative, do not remove it). No other errors. The tap CI compensates with `--skip-stable-version-audit` (Task 4).
+Expected: exits 0 (the strip automation already removed the redundant `version` line after the release). If it does not, the strip did not run — check gitia's release automation, do not touch the formula.
 
 - [ ] **Step 4: Install and test the formula from the local file**
 

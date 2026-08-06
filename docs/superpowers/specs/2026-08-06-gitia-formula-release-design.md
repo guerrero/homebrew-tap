@@ -62,9 +62,9 @@ Date: 2026-08-06 · Status: approved
    `system "#{bin}/gitia", "--version"`, per-OS/arch URL+sha256 blocks from the
    release assets.
 2. **Validate locally** (no token needed — public repo):
-   - `brew audit --formula gitia.rb` — known, accepted problem:
-     goreleaser emits a redundant `version "0.2.0"` line (audit exit 1); the
-     tap CI skips this check with `--skip-stable-version-audit`
+   - `brew audit --formula gitia.rb` — audit-clean: gitia's release
+     automation strips the redundant `version` line after every release, so
+     the audit exits 0
    - `brew install guerrero/tap/gitia`
    - `gitia --version` prints `gitia 0.2.0` (goreleaser's `{{ .Version }}`
      strips the `v`); `man gitia` resolves.
@@ -74,9 +74,9 @@ Date: 2026-08-06 · Status: approved
 4. **README**: installation instructions
    (`brew tap guerrero/tap` → `brew install gitia`). No token note — the
    source repo is public.
-5. **CI**: `tests.yml` runs `brew test-bot --only-formulae` on PRs, whose
-   audit step would fail on goreleaser's redundant `version` line — add
-   `--skip-stable-version-audit` to that invocation. No secrets needed.
+5. **CI**: `tests.yml` runs `brew test-bot --only-formulae` on PRs. No audit
+   flags needed — the strip automation keeps the formula audit-clean. No
+   secrets needed.
 
 ## Part 2 — gitia release process (manual, documented)
 
@@ -125,8 +125,9 @@ Date: 2026-08-06 · Status: approved
   URLs only for public repositories (private repos 404 even with a valid
   token). gitia is public; if it is ever made private again, brew installs
   break — keep it public or rework the formula.
-- **Tap CI on PRs**: the audit step fails on goreleaser's redundant `version`
-  line unless `--skip-stable-version-audit` is passed (see Part 1.5).
+- **Tap CI on PRs**: if the strip automation fails or is skipped, the next
+  goreleaser push reintroduces the redundant `version` line and the tap-syntax
+  CI goes red — the fix is re-running the strip, not hand-editing the formula.
 - **Formula drift**: the committed formula must match goreleaser's template;
   never hand-edit it beyond what goreleaser produces.
 
