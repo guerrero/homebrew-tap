@@ -11,6 +11,13 @@ brew tap guerrero/tap
 brew install gitia
 ```
 
+Homebrew 6 requires explicitly trusting third-party taps before installing
+formulae from them (one-time):
+
+```bash
+brew trust guerrero/tap
+```
+
 ## Documentation
 
 `brew help`, `man brew` or check [Homebrew's documentation](https://docs.brew.sh).
