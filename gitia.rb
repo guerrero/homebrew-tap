@@ -5,7 +5,6 @@
 class Gitia < Formula
   desc "Generate Conventional Commits from the staged diff with a local model"
   homepage "https://github.com/guerrero/gitia"
-  version "0.2.0"
   license "Unlicense"
 
   depends_on "git"
