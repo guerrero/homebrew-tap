@@ -29,11 +29,18 @@ Date: 2026-08-06 · Status: approved
 3. **Release process is manual and documented** (no CI reintroduced in gitia):
    a `make release` target, a "Releasing" checklist in `CONTRIBUTING.md`, and a
    short "Release" section in `AGENTS.md`.
+4. **The gitia repo is now public** (2026-08-06). Discovered during
+   implementation: brew 6.0.15 cannot attach credentials to formula downloads
+   (`HOMEBREW_GITHUB_API_TOKEN` is only used for Homebrew's own API calls), and
+   this GitHub does not serve `releases/download/<tag>/<asset>` URLs for
+   private repos under any authentication. Making the repo public restores the
+   goreleaser binary formula as an anonymous, frictionless download. The tap
+   repo stays public as it already was.
 
 ## Goals
 
-- `brew install gitia` works from `guerrero/tap` (with a GitHub token, since
-  the repo is private).
+- `brew install gitia` works from `guerrero/tap` with no setup (public repos,
+  anonymous downloads).
 - Future releases publish assets and update the tap formula automatically.
 - The release process is executable by one person from documented commands.
 
@@ -54,20 +61,22 @@ Date: 2026-08-06 · Status: approved
    `bin.install "gitia"` + `man1.install "man/gitia.1"`, test
    `system "#{bin}/gitia", "--version"`, per-OS/arch URL+sha256 blocks from the
    release assets.
-2. **Validate locally**:
-   - `brew audit --formula Formula/gitia.rb`
-   - `HOMEBREW_GITHUB_API_TOKEN=$(gh auth token) brew install guerrero/tap/gitia`
-   - `gitia --version` prints `gitia v0.2.0`; `man gitia` resolves.
-3. **Remove** `Formula/whjvenyl-fasd.rb` (tap-new boilerplate).
+2. **Validate locally** (no token needed — public repo):
+   - `brew audit --formula gitia.rb` — known, accepted problem:
+     goreleaser emits a redundant `version "0.2.0"` line (audit exit 1); the
+     tap CI skips this check with `--skip-stable-version-audit`
+   - `brew install guerrero/tap/gitia`
+   - `gitia --version` prints `gitia 0.2.0` (goreleaser's `{{ .Version }}`
+     strips the `v`); `man gitia` resolves.
+3. **Remove** `Formula/whjvenyl-fasd.rb` (tap-new boilerplate). Removing it also
+   makes the root-level `gitia.rb` visible to brew: brew's tap `formula_dir`
+   prefers the `Formula/` subdirectory when present.
 4. **README**: installation instructions
-   (`brew tap guerrero/tap` → `brew install gitia`) and a note that
-   `HOMEBREW_GITHUB_API_TOKEN` is required because the source repo is private.
-5. **CI token**: `tests.yml` runs `brew test-bot --only-formulae` on PRs,
-   which installs the formula — that download fails on the private repo without
-   a token. Add `HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}`
-   to the test-bot job; the user must add that secret (a PAT with `repo` scope)
-   to the tap repo. Until the secret exists, CI on PRs touching the formula
-   will fail — call this out when merging.
+   (`brew tap guerrero/tap` → `brew install gitia`). No token note — the
+   source repo is public.
+5. **CI**: `tests.yml` runs `brew test-bot --only-formulae` on PRs, whose
+   audit step would fail on goreleaser's redundant `version` line — add
+   `--skip-stable-version-audit` to that invocation. No secrets needed.
 
 ## Part 2 — gitia release process (manual, documented)
 
@@ -112,18 +121,20 @@ Date: 2026-08-06 · Status: approved
 - **goreleaser tap push needs write access**: `gh auth token` has `repo` scope
   on both repos. If the tap push fails, the formula still lands in
   `dist/gitia.rb` — copy it manually.
-- **Private-repo download**: without `HOMEBREW_GITHUB_API_TOKEN`, brew gets a
-  404. Documented in the tap README; CI needs the secret from Part 1.5.
-- **Tap CI on PRs**: formula tests download from the private repo; without the
-  secret, `tests.yml` fails — surface this before merging so the secret is set
-  first.
+- **`releases/download` requires a public repo**: this GitHub serves those
+  URLs only for public repositories (private repos 404 even with a valid
+  token). gitia is public; if it is ever made private again, brew installs
+  break — keep it public or rework the formula.
+- **Tap CI on PRs**: the audit step fails on goreleaser's redundant `version`
+  line unless `--skip-stable-version-audit` is passed (see Part 1.5).
 - **Formula drift**: the committed formula must match goreleaser's template;
   never hand-edit it beyond what goreleaser produces.
 
 ## Success criteria
 
-- `HOMEBREW_GITHUB_API_TOKEN=$(gh auth token) brew install guerrero/tap/gitia`
-  succeeds on this machine; `gitia --version` shows `v0.2.0`.
+- `brew install guerrero/tap/gitia` succeeds on this machine with no
+  environment setup; `gitia --version` first line is `gitia 0.2.0`.
 - GitHub Release `v0.2.0` exists with 4 assets + checksums.
 - `make release` fails fast when `HEAD` is untagged.
-- Tap repo: formula only, no boilerplate, README documents install + token.
+- Tap repo: formula only, no boilerplate, README documents install (no token
+  note).

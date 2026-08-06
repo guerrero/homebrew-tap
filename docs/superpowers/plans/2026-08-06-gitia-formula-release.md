@@ -12,16 +12,17 @@
 
 ## Global Constraints
 
-- Two repos, both private, both owned by `guerrero`:
-  - Tap (this repo, worktree): `/Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong`, branch `gitia-homebrew-formula`.
-  - gitia (regular clone): `/Users/alex/Proyectos/Personales/gitia`, branch `main`.
+- Two repos, both owned by `guerrero`; the gitia source repo was made **public** on 2026-08-06 (discovered: this GitHub serves `releases/download` URLs only for public repos, and brew 6.0.15 cannot attach credentials to formula downloads — so a private repo makes binary formulas undownloadable):
+  - Tap (this repo, worktree): `/Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong`, branch `gitia-homebrew-formula` (public).
+  - gitia (regular clone): `/Users/alex/Proyectos/Personales/gitia`, branch `main` (public).
 - gitia commit convention (from gitia `AGENTS.md`): Conventional Commits, imperative lower-case subject, no trailing period, header ≤ 72 chars, no scope for repo-wide changes.
 - Changelog: Keep a Changelog. The unpublished `[0.1.0]` entry merges into `[0.2.0]` dated `2026-08-06`; the local tag `v0.1.0` is deleted (never pushed).
 - Version policy (pre-1.0): `feat` → minor, `fix` → patch, breaking → minor.
 - **No CI in gitia** — releases are manual, documented in CONTRIBUTING.md.
-- **Never hand-edit `gitia.rb`** — goreleaser writes it to the **tap root** (its default directory for `homebrew-tap` repos; only `homebrew-core` uses `Formula/`); we inspect and verify. The boilerplate `Formula/whjvenyl-fasd.rb` is unrelated and removed in Task 4.
-- Private-repo downloads need a GitHub token: use `HOMEBREW_GITHUB_API_TOKEN=$(gh auth token)` (scopes include `repo`; `gh` is authenticated as `guerrero`).
-- Tooling facts: `goreleaser` and `golangci-lint` are NOT installed (install via brew in Task 1); `brew` 6.0.15 and `gh` are available.
+- **Never hand-edit `gitia.rb`** — goreleaser writes it to the **tap root** (its default directory for `homebrew-tap` repos; only `homebrew-core` uses `Formula/`); we inspect and verify. The boilerplate `Formula/whjvenyl-fasd.rb` is unrelated and removed in Task 4; removing it also makes the root formula visible to brew (brew's tap `formula_dir` prefers `Formula/` when present).
+- **No tokens needed anywhere** (public repos): no `HOMEBREW_GITHUB_API_TOKEN`, no wrapper, no secrets. `gh auth token` is still used inside gitia's `make release` (goreleaser pushes the formula to the tap over HTTPS).
+- **Verified facts**: `gitia --version` prints `gitia 0.2.0` (goreleaser's `{{ .Version }}` strips the `v`); `brew audit gitia.rb` reports one problem — goreleaser's redundant `version "0.2.0"` line — which the tap CI skips with `--skip-stable-version-audit` (Task 4).
+- Tooling facts: `goreleaser` 2.17.1 and `golangci-lint` are installed; `brew` 6.0.15; `gh` authenticated as `guerrero`.
 
 ---
 
@@ -267,23 +268,23 @@ Expected fields (from `.goreleaser.yaml` `brews:`): `desc "Generate Conventional
 - [ ] **Step 3: Audit the formula**
 
 Run: `cd /Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong && brew audit --formula gitia.rb`
-Expected: no errors (warnings acceptable).
+Expected: exit 1 with exactly ONE problem — `Stable: version 0.2.0 is redundant with version scanned from URL` (goreleaser emits the `version` line; it is authoritative, do not remove it). No other errors. The tap CI compensates with `--skip-stable-version-audit` (Task 4).
 
 - [ ] **Step 4: Install and test the formula from the local file**
 
 ```bash
 cd /Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong
-HOMEBREW_GITHUB_API_TOKEN=$(gh auth token) brew install --formula gitia.rb
+brew install --formula gitia.rb
 gitia --version | head -1
 ls "$(brew --prefix gitia)/share/man/man1/gitia.1"
 ```
 
-Expected: install succeeds; `gitia --version` first line is `gitia v0.2.0`; the man page file exists. If the download 404s, the token env is the fix — re-run with it set.
+Expected: install succeeds (downloads anonymously from the public repo); `gitia --version` first line is `gitia 0.2.0` (no `v` prefix — goreleaser strips it); the man page file exists. If the download 404s, the repo visibility is the problem — do NOT add tokens or wrappers; report BLOCKED.
 
 - [ ] **Step 5: Run the formula's test block and clean up**
 
 ```bash
-HOMEBREW_GITHUB_API_TOKEN=$(gh auth token) brew test --formula gitia.rb
+brew test --formula gitia.rb
 brew uninstall gitia
 ```
 
@@ -324,14 +325,6 @@ brew tap guerrero/tap
 brew install gitia
 ```
 
-The source repository is private, so Homebrew needs a GitHub token with
-`repo` scope to download the binaries:
-
-```bash
-export HOMEBREW_GITHUB_API_TOKEN=ghp_...
-brew install gitia
-```
-
 ## Documentation
 
 `brew help`, `man brew` or check [Homebrew's documentation](https://docs.brew.sh).
@@ -339,13 +332,13 @@ brew install gitia
 
 (Note the nested fenced block in the README: the outer fences are ```` ```markdown ```` … ```` ``` ```` — write the file with a text editor, not by nesting literals.)
 
-- [ ] **Step 3: Add the token to test-bot CI**
+- [ ] **Step 3: Make the test-bot audit pass on the generated formula**
 
-In `.github/workflows/tests.yml`, add an `env` block to the `test-bot` job (right after `runs-on`):
+In `.github/workflows/tests.yml`, the PR-only formulae step currently runs `brew test-bot --only-formulae`. goreleaser emits a `version "0.2.0"` line that `brew audit` flags as redundant (audit exits 1, failing the step). Add the standard skip flag to that invocation:
 
 ```yaml
-    env:
-      HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+      - run: brew test-bot --only-formulae --skip-stable-version-audit
+        if: github.event_name == 'pull_request'
 ```
 
 - [ ] **Step 4: Commit**
@@ -353,7 +346,7 @@ In `.github/workflows/tests.yml`, add an `env` block to the `test-bot` job (righ
 ```bash
 cd /Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong
 git add -A
-git commit -m "chore: document gitia install, pass token to CI, drop boilerplate"
+git commit -m "chore: document gitia install, fix test-bot audit, drop boilerplate"
 ```
 
 Verify: `git log --oneline -3` shows (top to bottom) this commit, the spec commit, the goreleaser formula commit.
@@ -373,13 +366,13 @@ Verify: `git log --oneline -3` shows (top to bottom) this commit, the spec commi
 Run: `cd /Users/alex/.paseo/worktrees/0vv4q0vo/adoring-dugong && git push -u origin gitia-homebrew-formula`
 Expected: push succeeds.
 
-- [ ] **Step 2: Open a PR and tell the user about the CI secret**
+- [ ] **Step 2: Open a PR**
 
 ```bash
-gh pr create --repo guerrero/homebrew-tap --title "Add gitia formula docs, CI token, and cleanup" --body "Generated by goreleaser; adds README install docs, passes HOMEBREW_GITHUB_API_TOKEN to test-bot, removes tap-new boilerplate."
+gh pr create --repo guerrero/homebrew-tap --title "Add gitia formula docs and CI fix" --body "Formula generated by goreleaser; adds README install docs, skips the stable-version audit (goreleaser's redundant version line), removes tap-new boilerplate."
 ```
 
-Then tell the user (do not merge yet): the PR's `brew test-bot --only-formulae` job installs gitia from the private repo, so the repo needs an Actions secret `HOMEBREW_GITHUB_API_TOKEN` (a PAT with `repo` scope) at `https://github.com/guerrero/homebrew-tap/settings/secrets/actions`. Ask them to add it (or to confirm they prefer pushing to `main` directly, which only runs tap-syntax checks).
+All downloads are anonymous (public repos) — no secrets needed. The PR's `brew test-bot --only-formulae --skip-stable-version-audit` job should pass on its own. If it does not, surface the failure to the user before merging.
 
 - [ ] **Step 3: Merge after the user confirms**
 
@@ -394,12 +387,12 @@ Expected: `origin/main` contains the formula, README, and workflow changes.
 - [ ] **Step 4: End-to-end install from the tap**
 
 ```bash
-HOMEBREW_GITHUB_API_TOKEN=$(gh auth token) brew tap guerrero/tap
-HOMEBREW_GITHUB_API_TOKEN=$(gh auth token) brew install gitia
+brew tap guerrero/tap
+brew install gitia
 gitia --version | head -1
 ```
 
-Expected: install succeeds from the real tap; `gitia v0.2.0` printed. Leave gitia installed (it is the user's daily tool).
+Expected: install succeeds from the real tap with no environment setup; `gitia 0.2.0` printed. Leave gitia installed (it is the user's daily tool).
 
 - [ ] **Step 5: Final verification**
 
@@ -409,4 +402,4 @@ git tag -C /Users/alex/Proyectos/Personales/gitia -l
 gh release view v0.2.0 --repo guerrero/gitia --json tagName,assets --jq '.tagName, (.assets | length)'
 ```
 
-Expected: gitia listed in brew; no local tags left in gitia; release `v0.2.0` with 5 assets. Then summarize: formula shape verification notes, whether the goreleaser tap push worked directly, and the user's remaining action (CI secret).
+Expected: gitia listed in brew; no local tags left in gitia; release `v0.2.0` with 5 assets. Then summarize: formula shape verification notes, whether the goreleaser tap push worked directly, and the audit-flag change.
