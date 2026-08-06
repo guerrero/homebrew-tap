@@ -10,7 +10,7 @@ Date: 2026-08-06 · Status: approved
 - `guerrero/gitia` (private repo) is a Go CLI. It already ships a goreleaser
   config (`.goreleaser.yaml`, version 2) whose `brews:` section targets
   `guerrero/homebrew-tap` — goreleaser is designed to generate and push
-  `Formula/gitia.rb` on every release.
+  `gitia.rb` (tap root) on every release.
 - There is **no published release** for gitia: the local tag `v0.1.0` was never
   pushed, `git ls-remote --tags origin` is empty, and no GitHub Release exists.
   The tag points 7 commits behind `HEAD`.
@@ -21,7 +21,7 @@ Date: 2026-08-06 · Status: approved
 
 ## Decisions (approved with the user)
 
-1. **Formula maintenance**: goreleaser generates and pushes `Formula/gitia.rb`
+1. **Formula maintenance**: goreleaser generates and pushes `gitia.rb` (tap root)
    to the tap on each release. No hand-maintained sha256.
 2. **First release is v0.2.0**: the unpublished tag `v0.1.0` is deleted, its
    CHANGELOG entry is merged into `[0.2.0]`, and the first real release
@@ -56,7 +56,7 @@ Date: 2026-08-06 · Status: approved
 ## Part 1 — Tap changes (this repo)
 
 1. **Formula**: after the first release run, goreleaser pushes
-   `Formula/gitia.rb` to `main`. Verify it matches the `brews:` config: desc,
+   `gitia.rb` (tap root) to `main`. Verify it matches the `brews:` config: desc,
    homepage, Unlicense, `depends_on "git"` + `depends_on "ollama" => :optional`,
    `bin.install "gitia"` + `man1.install "man/gitia.1"`, test
    `system "#{bin}/gitia", "--version"`, per-OS/arch URL+sha256 blocks from the
@@ -92,7 +92,7 @@ Date: 2026-08-06 · Status: approved
    4. `git tag vX.Y.Z && git push origin vX.Y.Z`.
    5. `GITHUB_TOKEN=$(gh auth token) make release` — goreleaser builds the 4
       archives, creates the GitHub Release (notes from commits), and pushes
-      `Formula/gitia.rb` to `guerrero/homebrew-tap`.
+      `gitia.rb` (tap root) to `guerrero/homebrew-tap`.
    6. Post-release: `brew update && brew upgrade gitia` to verify the formula.
    - Version policy: semver; pre-1.0 Conventional Commits — `feat` → minor,
      `fix` → patch, breaking → minor.
@@ -111,7 +111,7 @@ Date: 2026-08-06 · Status: approved
    push the tag.
 2. `GITHUB_TOKEN=$(gh auth token) make release` from `HEAD` of `main`.
 3. goreleaser creates the GitHub Release with assets and pushes
-   `Formula/gitia.rb` to `guerrero/homebrew-tap@main`.
+   `gitia.rb` (tap root) to `guerrero/homebrew-tap@main`.
 4. In this worktree: pull/rebase to include goreleaser's formula commit, apply
    Part 1 items (README, formula removal, tests.yml env), commit, push.
 5. Merge the tap branch to `main`.
