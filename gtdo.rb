@@ -8,23 +8,23 @@ class Gtdo < Formula
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.1.0/gtdo_0.1.0_darwin_amd64.tar.gz"
-      sha256 "eabb0cbb26cbd5713f7ebd480fba56eea48b16d7c8ecc680438daa1845d53747"
+      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.2.0/gtdo_0.2.0_darwin_amd64.tar.gz"
+      sha256 "59d9585ec1c2ff1bd6c87c8f24c004a45ab760f9c64b1afc094f1f13968d187e"
     end
     if Hardware::CPU.arm?
-      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.1.0/gtdo_0.1.0_darwin_arm64.tar.gz"
-      sha256 "293d2225a5432625adff91e8b4187a7e2a0569cbcb1e80109acd02035e997d17"
+      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.2.0/gtdo_0.2.0_darwin_arm64.tar.gz"
+      sha256 "1485c13d9df567eb4db50c276d7cb4fd8788ea628fb337e9a50f353a6f3b6f0c"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel? && Hardware::CPU.is_64_bit?
-      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.1.0/gtdo_0.1.0_linux_amd64.tar.gz"
-      sha256 "d0da9c49cb4acfd5cf08475d6de1adcf40de9678510c323633e41ac269761217"
+      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.2.0/gtdo_0.2.0_linux_amd64.tar.gz"
+      sha256 "e950a23517a92d89c062e2bad3ff9829f8334891c8ba24c2b3f1d211ff9ef36b"
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.1.0/gtdo_0.1.0_linux_arm64.tar.gz"
-      sha256 "4236aa7d3ff802ef827f61e15e709999b02590d3ad7eefd5fde939ca59c00f1b"
+      url "https://github.com/guerrero/gtdo-cli/releases/download/v0.2.0/gtdo_0.2.0_linux_arm64.tar.gz"
+      sha256 "b5a1392266627819cd034bb67471102f9eceeb9fdf81c40e559fd094ab5c1e6b"
     end
   end
 
