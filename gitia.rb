@@ -5,6 +5,7 @@
 class Gitia < Formula
   desc "Generate Conventional Commits from the staged diff with a local model"
   homepage "https://github.com/guerrero/gitia"
+  version "0.3.0"
   license "Unlicense"
 
   depends_on "git"
@@ -12,8 +13,8 @@ class Gitia < Formula
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/guerrero/gitia/releases/download/v0.2.0/gitia_0.2.0_darwin_amd64.tar.gz"
-      sha256 "4680db48b702e172514ebffda0be377a3f8b9af125c48060071d79f45d6a8f48"
+      url "https://github.com/guerrero/gitia/releases/download/v0.3.0/gitia_0.3.0_darwin_amd64.tar.gz"
+      sha256 "b543d57aa1c56414f0a9e1177c61bbcec0ec566a26d5933f861ac7528b3cecdc"
 
       define_method(:install) do
         bin.install "gitia"
@@ -21,8 +22,8 @@ class Gitia < Formula
       end
     end
     if Hardware::CPU.arm?
-      url "https://github.com/guerrero/gitia/releases/download/v0.2.0/gitia_0.2.0_darwin_arm64.tar.gz"
-      sha256 "6ac6d63c0d2bf8c7e6394e46247d06d4f23c0d2572e106c494a4431193f6d74b"
+      url "https://github.com/guerrero/gitia/releases/download/v0.3.0/gitia_0.3.0_darwin_arm64.tar.gz"
+      sha256 "cf59efde02765468b53e88dcd19a2017c63b95d088787a38051fb22a1c73c4f1"
 
       define_method(:install) do
         bin.install "gitia"
@@ -33,16 +34,16 @@ class Gitia < Formula
 
   on_linux do
     if Hardware::CPU.intel? && Hardware::CPU.is_64_bit?
-      url "https://github.com/guerrero/gitia/releases/download/v0.2.0/gitia_0.2.0_linux_amd64.tar.gz"
-      sha256 "2d6a7262595c0b0809783c41ef4ff1c07a954f0a83fa78bfc41fbc88b8553a5a"
+      url "https://github.com/guerrero/gitia/releases/download/v0.3.0/gitia_0.3.0_linux_amd64.tar.gz"
+      sha256 "300ab0af495b34dfaf5e7c48242054871b52e7cfa6d897eaa1e47492c0270eb5"
       define_method(:install) do
         bin.install "gitia"
         man1.install "man/gitia.1"
       end
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/guerrero/gitia/releases/download/v0.2.0/gitia_0.2.0_linux_arm64.tar.gz"
-      sha256 "e82d36d690bd73e3a75c8e677c0a83ac79a45aa6826e6cce989cf63b2a253cff"
+      url "https://github.com/guerrero/gitia/releases/download/v0.3.0/gitia_0.3.0_linux_arm64.tar.gz"
+      sha256 "2a05698864d97c2a2edb976d52058ec9ac5160841fa52befaa3937f486f5c3ba"
       define_method(:install) do
         bin.install "gitia"
         man1.install "man/gitia.1"
